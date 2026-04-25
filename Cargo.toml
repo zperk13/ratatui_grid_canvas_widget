@@ -1,0 +1,19 @@
+[package]
+name = "ratatui_grid_canvas_widget"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ratatui-core = "0.1.0"
+bitvec = { version = "1.0.1", optional=true, default-features=false }
+
+[features]
+default = ["binary", "color", "alloc"]
+binary = ["dep:bitvec"]
+color = []
+alloc = ["bitvec?/alloc"]
+
+# For the examples
+[dev-dependencies]
+ratatui = "0.30.0"
+fastrand = "2.4.1"
