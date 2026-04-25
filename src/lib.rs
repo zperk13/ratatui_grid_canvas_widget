@@ -56,6 +56,7 @@ pub mod grid {
             pub [[T; WIDTH]; HEIGHT],
         );
 
+        #[cfg(feature = "color")]
         impl<const WIDTH: usize, const HEIGHT: usize, T: ToColor> StackColoredGrid<WIDTH, HEIGHT, T> {
             /// Creates a new ColoredGridState with all values set to the provided value
             pub fn new_filled(value: T) -> Self
@@ -98,6 +99,7 @@ pub mod grid {
             }
         }
 
+        #[cfg(feature = "color")]
         impl<const WIDTH: usize, const HEIGHT: usize, T: ToColor> ColorGrid
             for StackColoredGrid<WIDTH, HEIGHT, T>
         {
@@ -119,6 +121,7 @@ pub mod grid {
             grid: Vec<T>,
         }
 
+        #[cfg(feature = "color")]
         impl<T: ToColor> AllocColoredGrid<T> {
             /// Creates a new ColoredGridState with all values set to the provided value
             pub fn new_filled(width: usize, height: usize, value: T) -> Self
@@ -177,6 +180,7 @@ pub mod grid {
             }
         }
 
+        #[cfg(feature = "color")]
         impl<T: ToColor> ColorGrid for AllocColoredGrid<T> {
             fn _getc(&self, x: usize, y: usize) -> Option<Color> {
                 self.get(x, y).map(ToColor::to_color)
@@ -191,6 +195,7 @@ pub mod grid {
             grid: BitVec,
         }
 
+        #[cfg(feature = "binary")]
         impl AllocBinaryGrid {
             /// Creates a new BinaryGridState with all values set to the provided bit
             pub fn new_filled(width: usize, height: usize, bit: bool) -> Self {
@@ -239,6 +244,7 @@ pub mod grid {
             }
         }
 
+        #[cfg(feature = "binary")]
         impl BinaryGrid for AllocBinaryGrid {
             fn _getb(&self, x: usize, y: usize) -> Option<bool> {
                 self.get(x, y)
