@@ -9,7 +9,7 @@
 //! - alloc
 //!     - This enables `state::alloc` which contains heap-allocated grids
 //!       for cases where you don't know the size at compile time.
-//!       They are not resizeable (at least for now)
+//!       They are not resizeable (at least for now).
 //! # Color Grids
 //! Instead of storing [Color]s,
 //! it takes in a generic type that implements [ToColor]
@@ -19,7 +19,7 @@
 //! # Binary Grids
 //! At the cost of being limited to 2 colors instead of 16777216, these have 2 advantages over color grids:
 //! 1. Smaller memory usage, since each cell only takes up 1 bit
-//! 2. Higher resolution options using quadrants or sextants
+//! 2. Higher resolution options using quadrants, sextants, or braille.
 //! # Coordinates
 //! Like Ratatui, the coordinate system in the grids runs left to right, top to bottom, with the origin (0, 0) in the top left corner.
 #[cfg(all(feature = "binary", feature = "alloc"))]
@@ -495,8 +495,7 @@ pub mod widget {
         }
 
         binary_widget!(
-            /// Uses Unicode half blocks and full blocks
-            /// which allows you to have 2 colors per terminal cell,
+            /// Uses Unicode half blocks and full blocks,
             /// doubling the vertical resolution.
             /// # Used Characters:
             /// - ▀
@@ -539,8 +538,7 @@ pub mod widget {
         }
 
         binary_widget!(
-            /// Uses Unicode half blocks and full blocks
-            /// which allows you to have 2 colors per terminal cell,
+            /// Uses Unicode half blocks and full blocks,
             /// doubling the horizontal resolution,
             /// albeit with perhaps weirdly skinny "pixels".
             /// # Used Characters:
