@@ -7,9 +7,7 @@
 //!       But if you're using binary grids but not color grids and you want to minimize your compile
 //!       time...
 //! - alloc
-//!     - This enables `state::alloc` which contains heap-allocated grids
-//!       for cases where you don't know the size at compile time.
-//!       They are not resizeable (at least for now).
+//!     - This enables `state::alloc` which contains resizeable heap-allocated grids.
 //! # Color Grids
 //! Instead of storing [Color]s,
 //! it takes in a generic type that implements [ToColor]
@@ -26,6 +24,7 @@
 use bitvec::vec::BitVec;
 use ratatui_core::style::Color;
 use ratatui_core::{layout::Position, widgets::Widget};
+use std::iter::repeat_n;
 
 #[cfg(feature = "binary")]
 pub trait BinaryGrid {
@@ -118,7 +117,7 @@ pub mod grid {
         pub struct AllocColoredGrid<T: ToColor = Color> {
             width: usize,
             height: usize,
-            grid: Vec<T>,
+            grid: Vec<Vec<T>>,
         }
 
         #[cfg(feature = "color")]
@@ -131,7 +130,7 @@ pub mod grid {
                 Self {
                     width,
                     height,
-                    grid: Vec::from_iter(std::iter::repeat_n(value, width * height)),
+                    grid: Vec::from_iter(repeat_n(Vec::from_iter(repeat_n(value, width)), height)),
                 }
             }
 
@@ -141,11 +140,13 @@ pub mod grid {
                 height: usize,
                 mut f: impl FnMut(usize, usize) -> T,
             ) -> Self {
-                let mut grid = Vec::with_capacity(width * height);
+                let mut grid = Vec::with_capacity(height);
                 for y in 0..height {
+                    let mut row = Vec::with_capacity(width);
                     for x in 0..width {
-                        grid.push(f(x, y));
+                        row.push(f(x, y));
                     }
+                    grid.push(row);
                 }
                 Self {
                     width,
@@ -155,28 +156,97 @@ pub mod grid {
             }
 
             pub fn get(&self, x: usize, y: usize) -> Option<&T> {
-                if x >= self.width || y >= self.height {
-                    return None;
-                }
-                self.grid.get(y * self.width + x)
+                self.grid.get(y)?.get(x)
             }
 
             pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
-                if x >= self.width || y >= self.height {
-                    return None;
-                }
-                self.grid.get_mut(y * self.width + x)
+                self.grid.get_mut(y)?.get_mut(x)
             }
 
             /// Panics if out of bounds
             pub fn set(&mut self, x: usize, y: usize, value: T) {
-                assert!(x < self.width);
-                assert!(y < self.height);
-                self.grid[y * self.width + x] = value
+                self.grid[y][x] = value
             }
 
             pub fn area(&self) -> usize {
                 self.width * self.height
+            }
+
+            /// Appends a row filled with `value`s to the bottom of the grid.
+            /// The value gets cloned `width-1` times.
+            pub fn push_row(&mut self, value: T)
+            where
+                T: Clone,
+            {
+                self.grid.push(Vec::from_iter(repeat_n(value, self.width)));
+            }
+
+            /// Appends a column filled with `bit`s to the right of the grid.
+            /// The value gets cloned `height-1` times.
+            pub fn push_column(&mut self, value: T)
+            where
+                T: Clone,
+            {
+                for row in self.grid.iter_mut().skip(1) {
+                    row.push(value.clone());
+                }
+                self.grid[0].push(value);
+            }
+
+            /// Inserts a row filled with `bit`s at position `y` within the grid,
+            /// shifting all columns below it downwards.
+            /// The value gets cloned `width-1` times.
+            pub fn insert_row(&mut self, y: usize, value: T)
+            where
+                T: Clone,
+            {
+                self.grid
+                    .insert(y, Vec::from_iter(repeat_n(value, self.width)));
+            }
+
+            /// Inserts a column filled with `bit`s at position `x` within the grid,
+            /// shifting all rows after it to the right.
+            /// The value gets cloned `height-1` times.
+            pub fn insert_column(&mut self, x: usize, value: T)
+            where
+                T: Clone,
+            {
+                for row in self.grid.iter_mut().skip(1) {
+                    row.insert(x, value.clone());
+                }
+                self.grid[0].insert(x, value);
+            }
+
+            /// Removes the row at position `y` within the grid,
+            /// shifting all rows below it upwards.
+            /// # Panics
+            /// Panics is `y >= height`
+            pub fn remove_row(&mut self, y: usize) {
+                let _ = self.grid.remove(y);
+            }
+
+            /// Removes the column at position `x` within the grid,
+            /// shifting all columns after it to the left.
+            /// # Panics
+            /// Panics is `x >= width`
+            pub fn remove_column(&mut self, x: usize) {
+                for row in &mut self.grid {
+                    let _ = row.remove(x);
+                }
+            }
+
+            /// Reserves capacity for at least `additional` more rows to be inserted.
+            /// Does nothing if capacity is already sufficient.
+            pub fn reserve_rows(&mut self, additional: usize) {
+                self.grid.reserve(additional);
+            }
+
+            /// Reserves capacity for at least `additional` more columns to be inserted.
+            /// Does nothing if capacity is already sufficient.
+            pub fn reserve_columns(&mut self, additional: usize) {
+                for row in &mut self.grid {
+                    row.reserve(additional);
+                }
             }
         }
 
@@ -192,7 +262,7 @@ pub mod grid {
         pub struct AllocBinaryGrid {
             width: usize,
             height: usize,
-            grid: BitVec,
+            grid: Vec<BitVec>,
         }
 
         #[cfg(feature = "binary")]
@@ -202,7 +272,7 @@ pub mod grid {
                 Self {
                     width,
                     height,
-                    grid: BitVec::repeat(bit, width * height),
+                    grid: Vec::from_iter(repeat_n(BitVec::repeat(bit, width), height)),
                 }
             }
 
@@ -212,11 +282,13 @@ pub mod grid {
                 height: usize,
                 mut f: impl FnMut(usize, usize) -> bool,
             ) -> Self {
-                let mut grid = BitVec::with_capacity(width * height);
+                let mut grid = Vec::with_capacity(height);
                 for y in 0..height {
+                    let mut row = BitVec::with_capacity(width);
                     for x in 0..width {
-                        grid.push(f(x, y));
+                        row.push(f(x, y));
                     }
+                    grid.push(row);
                 }
                 Self {
                     width,
@@ -226,21 +298,75 @@ pub mod grid {
             }
 
             pub fn get(&self, x: usize, y: usize) -> Option<bool> {
-                if x >= self.width || y >= self.height {
-                    return None;
-                }
-                self.grid.get(y * self.width + x).as_deref().copied()
+                self.grid.get(y)?.get(x).as_deref().copied()
             }
 
             /// Panics if out of bounds
             pub fn set(&mut self, x: usize, y: usize, bit: bool) {
-                assert!(x < self.width);
-                assert!(y < self.height);
-                self.grid.set(y * self.width + x, bit);
+                self.grid[y].set(x, bit);
             }
 
             pub fn area(&self) -> usize {
                 self.width * self.height
+            }
+
+            /// Appends a row filled with `bit`s to the bottom of the grid
+            pub fn push_row(&mut self, bit: bool) {
+                self.grid.push(BitVec::repeat(bit, self.width));
+            }
+
+            /// Appends a column filled with `bit`s to the right of the grid
+            pub fn push_column(&mut self, bit: bool) {
+                for row in &mut self.grid {
+                    row.push(bit);
+                }
+            }
+
+
+            /// Inserts a row filled with `bit`s at position `y` within the grid,
+            /// shifting all rows below it downwards.
+            pub fn insert_row(&mut self, y: usize, bit: bool) {
+                self.grid.insert(y, BitVec::repeat(bit, self.width));
+            }
+
+            /// Inserts a columns filled with `bit`s at position `x` within the grid,
+            /// shifting all rows below it downwards.
+            pub fn insert_column(&mut self, x: usize, bit: bool) {
+                for row in &mut self.grid {
+                    row.insert(x, bit);
+                }
+            }
+
+            /// Removes the row at position `y` within the grid,
+            /// shifting all rows below it upwards.
+            /// # Panics
+            /// Panics is `y >= height`
+            pub fn remove_row(&mut self, y: usize) {
+                let _ = self.grid.remove(y);
+            }
+
+            /// Removes the column at position `x` within the grid,
+            /// shifting all columns after it to the left.
+            /// # Panics
+            /// Panics is `x >= width`
+            pub fn remove_column(&mut self, x: usize) {
+                for row in &mut self.grid {
+                    let _ = row.remove(x);
+                }
+            }
+
+            /// Reserves capacity for at least `additional` more rows to be inserted.
+            /// Does nothing if capacity is already sufficient.
+            pub fn reserve_rows(&mut self, additional: usize) {
+                self.grid.reserve(additional);
+            }
+
+            /// Reserves capacity for at least `additional` more columns to be inserted
+            /// Does nothing if capacity is already sufficient.
+            pub fn reserve_columns(&mut self, additional: usize) {
+                for row in &mut self.grid {
+                    row.reserve(additional);
+                }
             }
         }
 
