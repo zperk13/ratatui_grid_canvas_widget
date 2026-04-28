@@ -15,6 +15,7 @@ fn main() {
 #[derive(Debug)]
 #[allow(clippy::enum_variant_names)]
 enum Mode {
+    DoubleFullBlock,
     FullBlock,
     HalfBlock,
     HorizontalHalfBlock,
@@ -24,9 +25,10 @@ impl Mode {
     fn cycle(&mut self) {
         use Mode::*;
         *self = match self {
+            DoubleFullBlock => FullBlock,
             FullBlock => HalfBlock,
             HalfBlock => HorizontalHalfBlock,
-            HorizontalHalfBlock => FullBlock,
+            HorizontalHalfBlock => DoubleFullBlock,
         }
     }
 }
@@ -153,6 +155,9 @@ impl Widget for &LangtonsAnt {
         )
         .render(top, buf);
         match self.mode {
+            Mode::DoubleFullBlock => {
+                DoubleFullBlockColorGridWidget::new(&self.grid).render(rest, buf)
+            }
             Mode::FullBlock => FullBlockColorGridWidget::new(&self.grid).render(rest, buf),
             Mode::HalfBlock => HalfBlockColorGridWidget::new(&self.grid).render(rest, buf),
             Mode::HorizontalHalfBlock => {

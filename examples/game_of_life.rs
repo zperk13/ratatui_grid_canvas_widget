@@ -16,6 +16,7 @@ fn main() {
 
 #[derive(Debug)]
 enum Mode {
+    DoubleFullBlock,
     FullBlock,
     HalfBlock,
     HorizontalHalfBlock,
@@ -28,12 +29,13 @@ impl Mode {
     fn cycle(&mut self) {
         use Mode::*;
         *self = match self {
+            DoubleFullBlock => FullBlock,
             FullBlock => HalfBlock,
             HalfBlock => HorizontalHalfBlock,
             HorizontalHalfBlock => Quadrant,
             Quadrant => Sextant,
             Sextant => Braille,
-            Braille => FullBlock,
+            Braille => DoubleFullBlock,
         }
     }
 }
@@ -142,6 +144,9 @@ impl Widget for &GameOfLife {
             Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
         ratatui::macros::span!("{:?} (Cycle with m) q to quit", self.mode).render(top, buf);
         match self.mode {
+            Mode::DoubleFullBlock => {
+                DoubleFullBlockBinaryGridWidget::new(&self.current).render(rest, buf)
+            }
             Mode::FullBlock => FullBlockBinaryGridWidget::new(&self.current).render(rest, buf),
             Mode::HalfBlock => HalfBlockBinaryGridWidget::new(&self.current).render(rest, buf),
             Mode::HorizontalHalfBlock => {

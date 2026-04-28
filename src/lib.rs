@@ -322,7 +322,6 @@ pub mod grid {
                 }
             }
 
-
             /// Inserts a row filled with `bit`s at position `y` within the grid,
             /// shifting all rows below it downwards.
             pub fn insert_row(&mut self, y: usize, bit: bool) {
@@ -410,6 +409,40 @@ pub mod widget {
                     }
                 }
             };
+        }
+        color_widget!(
+            /// Uses 2 Unicode full blocks which each fill an entire terminal cell.
+            /// They are placed next to each other on the same row, not the same column.
+            /// # Used Characters:
+            /// - █
+            DoubleFullBlockColorGridWidget
+        );
+        impl<T: ColorGrid> Widget for DoubleFullBlockColorGridWidget<'_, T> {
+            fn render(
+                self,
+                area: ratatui_core::layout::Rect,
+                buf: &mut ratatui_core::buffer::Buffer,
+            ) {
+                for y in 0..area.height {
+                    let buf_y = y + area.y;
+                    for x in 0..area.width {
+                        let buf_x = x + area.x;
+                        let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
+                        let grid_x = (x / 2) as usize;
+                        let grid_y = y as usize;
+                        match self.grid._getc(grid_x, grid_y) {
+                            None => {
+                                cell.set_char(' ');
+                                cell.bg = self.bg;
+                            }
+                            Some(color) => {
+                                cell.set_char('█');
+                                cell.fg = color;
+                            }
+                        }
+                    }
+                }
+            }
         }
         color_widget!(
             /// Uses Unicode full blocks which fill an entire terminal cell.
@@ -594,6 +627,37 @@ pub mod widget {
                     }
                 }
             };
+        }
+        binary_widget!(
+            /// Uses 2 Unicode full blocks which each fill an entire terminal cell.
+            /// They are placed next to each other on the same row, not the same column.
+            /// # Used Characters:
+            /// - █
+            DoubleFullBlockBinaryGridWidget
+        );
+        impl<T: BinaryGrid> Widget for DoubleFullBlockBinaryGridWidget<'_, T> {
+            fn render(
+                self,
+                area: ratatui_core::layout::Rect,
+                buf: &mut ratatui_core::buffer::Buffer,
+            ) {
+                for y in 0..area.height {
+                    let buf_y = y + area.y;
+                    for x in 0..area.width {
+                        let buf_x = x + area.x;
+                        let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
+                        let grid_x = (x / 2) as usize;
+                        let grid_y = y as usize;
+                        if self.get(grid_x, grid_y) {
+                            cell.set_char('█');
+                            cell.fg = self.fg;
+                        } else {
+                            cell.set_char(' ');
+                            cell.bg = self.bg;
+                        }
+                    }
+                }
+            }
         }
         binary_widget!(
             /// Uses Unicode full blocks which fill an entire terminal cell.
