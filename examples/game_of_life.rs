@@ -1,5 +1,6 @@
 use ratatui::crossterm;
 use ratatui::crossterm::event::{KeyCode, KeyEventKind};
+use ratatui::layout::Flex;
 use ratatui::prelude::*;
 use ratatui_grid_canvas_widget::grid::alloc::AllocBinaryGrid;
 use ratatui_grid_canvas_widget::widget::binary::*;
@@ -9,7 +10,8 @@ use std::time::Duration;
 fn main() {
     let (width, height) = crossterm::terminal::size().unwrap();
     ratatui::run(|terminal| {
-        GameOfLife::random(width as usize, (height - 1) as usize).run(terminal)
+        // -1 is for the text being rendered at the top of the screen
+        GameOfLife::random((width as usize) * 2, (height as usize) * 4 - 1).run(terminal)
     })
     .unwrap();
 }
@@ -46,16 +48,20 @@ struct GameOfLife {
     height: usize,
     current: AllocBinaryGrid,
     next: AllocBinaryGrid,
+    pan_x: usize,
+    pan_y: usize,
 }
 
 impl GameOfLife {
     fn random(width: usize, height: usize) -> Self {
         Self {
-            mode: Mode::FullBlock,
+            mode: Mode::DoubleFullBlock,
             width,
             height,
             current: AllocBinaryGrid::from_fn(width, height, |_x, _y| fastrand::bool()),
             next: AllocBinaryGrid::new_filled(width, height, false),
+            pan_x: 0,
+            pan_y: 0,
         }
     }
     fn neighbors(&self, x: usize, y: usize) -> usize {
@@ -122,6 +128,18 @@ impl GameOfLife {
                             KeyCode::Char('q') => {
                                 break;
                             }
+                            KeyCode::Char('w') => {
+                                self.pan_y = self.pan_y.saturating_sub(1);
+                            }
+                            KeyCode::Char('a') => {
+                                self.pan_x = self.pan_x.saturating_sub(1);
+                            }
+                            KeyCode::Char('s') => {
+                                self.pan_y += 1;
+                            }
+                            KeyCode::Char('d') => {
+                                self.pan_x += 1;
+                            }
                             _ => {}
                         }
                     }
@@ -140,21 +158,55 @@ impl GameOfLife {
 
 impl Widget for &GameOfLife {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let [top, rest] =
+        let [text_area, game_area] =
             Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
-        ratatui::macros::span!("{:?} (Cycle with m) q to quit", self.mode).render(top, buf);
+        let [quit_area, wasd_area, mode_area] = Layout::horizontal([Constraint::Fill(1); 3])
+            .flex(Flex::SpaceBetween)
+            .areas(text_area);
+        ratatui::macros::span!("q to quit")
+            .underlined()
+            .bold()
+            .reversed()
+            .render(quit_area, buf);
+        ratatui::macros::span!("wasd to move")
+            .underlined()
+            .bold()
+            .reversed()
+            .render(wasd_area, buf);
+        ratatui::macros::span!("{:?} (Cycle with m)", self.mode)
+            .underlined()
+            .bold()
+            .reversed()
+            .render(mode_area, buf);
         match self.mode {
-            Mode::DoubleFullBlock => {
-                DoubleFullBlockBinaryGridWidget::new(&self.current).render(rest, buf)
-            }
-            Mode::FullBlock => FullBlockBinaryGridWidget::new(&self.current).render(rest, buf),
-            Mode::HalfBlock => HalfBlockBinaryGridWidget::new(&self.current).render(rest, buf),
-            Mode::HorizontalHalfBlock => {
-                HorizontalHalfBlockBinaryGridWidget::new(&self.current).render(rest, buf)
-            }
-            Mode::Quadrant => QuadrantBinaryGridWidget::new(&self.current).render(rest, buf),
-            Mode::Sextant => SextantBinaryGridWidget::new(&self.current).render(rest, buf),
-            Mode::Braille => BrailleBinaryGridWidget::new(&self.current).render(rest, buf),
+            Mode::DoubleFullBlock => DoubleFullBlockBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::FullBlock => FullBlockBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::HalfBlock => HalfBlockBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::HorizontalHalfBlock => HorizontalHalfBlockBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::Quadrant => QuadrantBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::Sextant => SextantBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
+            Mode::Braille => BrailleBinaryGridWidget::new(&self.current)
+                .with_pan_x(self.pan_x)
+                .with_pan_y(self.pan_y)
+                .render(game_area, buf),
         }
     }
 }

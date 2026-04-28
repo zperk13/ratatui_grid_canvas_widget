@@ -386,25 +386,43 @@ pub mod widget {
             ($(#[$attr:meta])* $ident:ident) => {
                 $(#[$attr])*
                 /// # bg
-                /// If the render area is bigger than the grid,
+                /// If there is is not grid to be rendered in an area,
+                /// either to do the render area
+                /// being too big, or because of panning,
                 /// the remaining area will be the terminal's default background color ([Color::Reset]).
                 /// You can change that with [Self::with_bg].
                 #[derive(Debug)]
                 pub struct $ident<'a, T: ColorGrid> {
                     bg: Color,
                     grid: &'a T,
+                    pan_x: usize,
+                    pan_y: usize,
                 }
                 impl<'a, T: ColorGrid> $ident<'a, T> {
                     pub fn new(grid: &'a T) -> Self {
                         Self {
                             bg: Color::Reset,
                             grid,
+                            pan_x: 0,
+                            pan_y: 0,
                         }
                     }
                     pub fn with_bg(self, bg: Color) -> Self {
                         Self {
                             bg,
-                            grid: self.grid,
+                            ..self
+                        }
+                    }
+                    pub fn with_pan_x(self, pan_x: usize) -> Self {
+                        Self {
+                            pan_x,
+                            ..self
+                        }
+                    }
+                    pub fn with_pan_y(self, pan_y: usize) -> Self {
+                        Self {
+                            pan_y,
+                            ..self
                         }
                     }
                 }
@@ -428,8 +446,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = (x / 2) as usize;
-                        let grid_y = y as usize;
+                        let grid_x = (x / 2) as usize + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         match self.grid._getc(grid_x, grid_y) {
                             None => {
                                 cell.set_char(' ');
@@ -461,8 +479,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = x as usize;
-                        let grid_y = y as usize;
+                        let grid_x = x as usize + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         match self.grid._getc(grid_x, grid_y) {
                             None => {
                                 cell.set_char(' ');
@@ -499,8 +517,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = x as usize;
-                        let grid_y = y as usize * 2;
+                        let grid_x = x as usize + self.pan_x;
+                        let grid_y = y as usize * 2 + self.pan_y;
                         match (
                             self.grid._getc(grid_x, grid_y),
                             self.grid._getc(grid_x, grid_y + 1),
@@ -552,8 +570,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = x as usize * 2;
-                        let grid_y = y as usize;
+                        let grid_x = x as usize * 2 + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         match (
                             self.grid._getc(grid_x, grid_y),
                             self.grid._getc(grid_x + 1, grid_y),
@@ -593,13 +611,17 @@ pub mod widget {
                 /// # fg and bg
                 /// By default, fg and bg will be your terminal's default foreground and background color respectively ([Color::Reset]).
                 /// These can be changed with [Self::with_fg] and [Self::with_bg] respectively.
-                /// If the render area is bigger than the grid,
+                /// If there is is not grid to be rendered in an area,
+                /// either to do the render area
+                /// being too big, or because of panning,
                 /// the remaining area will be bg.
                 #[derive(Debug)]
                 pub struct $ident<'a, T: BinaryGrid> {
                     fg: Color,
                     bg: Color,
                     grid: &'a T,
+                    pan_x: usize,
+                    pan_y: usize
                 }
                 impl<'a, T: BinaryGrid> $ident<'a, T> {
                     pub fn new(grid: &'a T) -> Self {
@@ -607,6 +629,8 @@ pub mod widget {
                             fg: Color::Reset,
                             bg: Color::Reset,
                             grid,
+                            pan_x: 0,
+                            pan_y: 0
                         }
                     }
                     pub fn with_fg(self, fg: Color) -> Self {
@@ -622,9 +646,24 @@ pub mod widget {
                         }
                     }
 
+                    pub fn with_pan_x(self, pan_x: usize) -> Self {
+                        Self {
+                            pan_x,
+                            ..self
+                        }
+                    }
+
+                    pub fn with_pan_y(self, pan_y: usize) -> Self {
+                        Self {
+                            pan_y,
+                            ..self
+                        }
+                    }
+
                     fn get(&self, x: usize, y: usize) -> bool {
                         self.grid._getb(x, y).unwrap_or(false)
                     }
+
                 }
             };
         }
@@ -646,8 +685,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = (x / 2) as usize;
-                        let grid_y = y as usize;
+                        let grid_x = (x / 2) as usize + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         if self.get(grid_x, grid_y) {
                             cell.set_char('█');
                             cell.fg = self.fg;
@@ -676,8 +715,8 @@ pub mod widget {
                     for x in 0..area.width {
                         let buf_x = x + area.x;
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
-                        let grid_x = x as usize;
-                        let grid_y = y as usize;
+                        let grid_x = x as usize + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         if self.get(grid_x, grid_y) {
                             cell.set_char('█');
                             cell.fg = self.fg;
@@ -712,8 +751,8 @@ pub mod widget {
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
                         cell.fg = self.fg;
                         cell.bg = self.bg;
-                        let grid_x = x as usize;
-                        let grid_y = y as usize * 2;
+                        let grid_x = x as usize + self.pan_x;
+                        let grid_y = y as usize * 2 + self.pan_y;
                         match (self.get(grid_x, grid_y), self.get(grid_x, grid_y + 1)) {
                             (false, false) => {
                                 cell.set_char(' ');
@@ -756,8 +795,8 @@ pub mod widget {
                         let cell = buf.cell_mut(Position { x: buf_x, y: buf_y }).unwrap();
                         cell.fg = self.fg;
                         cell.bg = self.bg;
-                        let grid_x = x as usize * 2;
-                        let grid_y = y as usize;
+                        let grid_x = x as usize * 2 + self.pan_x;
+                        let grid_y = y as usize + self.pan_y;
                         match (self.get(grid_x, grid_y), self.get(grid_x + 1, grid_y)) {
                             (false, false) => {
                                 cell.set_char(' ');
@@ -781,8 +820,6 @@ pub mod widget {
             /// Uses Unicode quadrants, half blocks, and full blocks
             /// which only allows you to have 2 colors in the whole grid,
             /// but with double the vertical and horizontal resolution.
-            /// If the render area is bigger than the grid,
-            /// the remaining area will be bg.
             /// # Used Characters:
             /// - ▘
             /// - ▝
@@ -816,8 +853,8 @@ pub mod widget {
                         cell.fg = self.fg;
                         cell.bg = self.bg;
 
-                        let grid_x = x as usize * 2;
-                        let grid_y = y as usize * 2;
+                        let grid_x = x as usize * 2 + self.pan_x;
+                        let grid_y = y as usize * 2 + self.pan_y;
 
                         match (
                             self.get(grid_x, grid_y),
@@ -938,8 +975,8 @@ pub mod widget {
                         cell.fg = self.fg;
                         cell.bg = self.bg;
 
-                        let grid_x = x as usize * 2;
-                        let grid_y = y as usize * 3;
+                        let grid_x = x as usize * 2 + self.pan_x;
+                        let grid_y = y as usize * 3 + self.pan_y;
 
                         let mut index = 0;
 
@@ -1246,8 +1283,8 @@ pub mod widget {
                         cell.fg = self.fg;
                         cell.bg = self.bg;
 
-                        let grid_x = x as usize * 2;
-                        let grid_y = y as usize * 4;
+                        let grid_x = x as usize * 2 + self.pan_x;
+                        let grid_y = y as usize * 4 + self.pan_y;
 
                         // Dots 1-3 are the left column
                         // Dots 4-6 are the right column
