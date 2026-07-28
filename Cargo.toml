@@ -2,6 +2,8 @@
 name = "ratatui_grid_canvas_widget"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/zperk13/ratatui_grid_canvas_widget"
+rust-version = "1.86.0"
 
 [dependencies]
 ratatui-core = "0.1.0"
