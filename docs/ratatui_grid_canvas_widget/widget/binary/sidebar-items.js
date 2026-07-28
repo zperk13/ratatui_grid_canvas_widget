@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BrailleBinaryGridWidget","DoubleFullBlockBinaryGridWidget","FullBlockBinaryGridWidget","HalfBlockBinaryGridWidget","HorizontalHalfBlockBinaryGridWidget","QuadrantBinaryGridWidget","SextantBinaryGridWidget"]};

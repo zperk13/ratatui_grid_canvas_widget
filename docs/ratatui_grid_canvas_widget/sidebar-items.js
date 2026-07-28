@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["grid","widget"],"trait":["BinaryGrid","ColorGrid","ToColor"]};
