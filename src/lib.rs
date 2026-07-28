@@ -36,10 +36,12 @@ pub trait ColorGrid {
     fn _getc(&self, x: usize, y: usize) -> Option<Color>;
 }
 
+#[cfg(feature = "color")]
 pub trait ToColor {
     fn to_color(&self) -> Color;
 }
 
+#[cfg(feature = "color")]
 impl ToColor for Color {
     fn to_color(&self) -> Color {
         *self
