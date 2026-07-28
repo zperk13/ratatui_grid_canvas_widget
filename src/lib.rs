@@ -4,10 +4,10 @@
 //!     - You might want this disabled if you're not using it since it brings in dependencies ([bitvec](https://docs.rs/bitvec/1.0.1/bitvec/) and [whatever it depends on](https://crates.io/crates/bitvec/dependencies))
 //! - color
 //!     - Honestly, this is just a feature because binary is. This doesn't bring in any dependencies.
-//!       But if you're using binary grids but not color grids and you want to minimize your compile
+//!       But if you're using binary grids and not color grids and you want to minimize your compile
 //!       time...
 //! - alloc
-//!     - This enables `state::alloc` which contains resizeable heap-allocated grids.
+//!     - This enables [grid::alloc] which contains resizeable heap-allocated grids.
 //! # Color Grids
 //! Instead of storing [Color]s,
 //! it takes in a generic type that implements [ToColor]
@@ -59,7 +59,7 @@ pub mod grid {
 
         #[cfg(feature = "color")]
         impl<const WIDTH: usize, const HEIGHT: usize, T: ToColor> StackColoredGrid<WIDTH, HEIGHT, T> {
-            /// Creates a new ColoredGridState with all values set to the provided value
+            /// Creates a new StackColoredGrid with all values set to the provided value
             pub fn new_filled(value: T) -> Self
             where
                 T: Copy,
@@ -67,7 +67,7 @@ pub mod grid {
                 Self([[value; WIDTH]; HEIGHT])
             }
 
-            /// Creates a new ColoredGridState with all values set to the provided value,
+            /// Creates a new StackColoredGrid with all values set to the provided value,
             /// cloning it for each cell
             pub fn new_filled_clone(value: T) -> Self
             where
@@ -78,7 +78,7 @@ pub mod grid {
                 }))
             }
 
-            /// Creates a new ColoredGridState will all values initialized by calling f(x, y)
+            /// Creates a new StackColoredGrid will all values initialized by calling f(x, y)
             pub fn from_fn(mut f: impl FnMut(usize, usize) -> T) -> Self {
                 Self(std::array::from_fn(|y| std::array::from_fn(|x| f(x, y))))
             }
@@ -124,7 +124,7 @@ pub mod grid {
 
         #[cfg(feature = "color")]
         impl<T: ToColor> AllocColoredGrid<T> {
-            /// Creates a new ColoredGridState with all values set to the provided value
+            /// Creates a new AllocColoredGrid with all values set to the provided value
             pub fn new_filled(width: usize, height: usize, value: T) -> Self
             where
                 T: Clone,
@@ -136,7 +136,7 @@ pub mod grid {
                 }
             }
 
-            /// Creates a new ColoredGridState will all values initialized by calling f(x, y)
+            /// Creates a new AllocColoredGrid will all values initialized by calling f(x, y)
             pub fn from_fn(
                 width: usize,
                 height: usize,
@@ -222,7 +222,7 @@ pub mod grid {
             /// Removes the row at position `y` within the grid,
             /// shifting all rows below it upwards.
             /// # Panics
-            /// Panics is `y >= height`
+            /// Panics if `y >= height`
             pub fn remove_row(&mut self, y: usize) {
                 let _ = self.grid.remove(y);
             }
@@ -230,7 +230,7 @@ pub mod grid {
             /// Removes the column at position `x` within the grid,
             /// shifting all columns after it to the left.
             /// # Panics
-            /// Panics is `x >= width`
+            /// Panics if `x >= width`
             pub fn remove_column(&mut self, x: usize) {
                 for row in &mut self.grid {
                     let _ = row.remove(x);
@@ -269,7 +269,7 @@ pub mod grid {
 
         #[cfg(feature = "binary")]
         impl AllocBinaryGrid {
-            /// Creates a new BinaryGridState with all values set to the provided bit
+            /// Creates a new AllocBinaryGrid with all values set to the provided bit
             pub fn new_filled(width: usize, height: usize, bit: bool) -> Self {
                 Self {
                     width,
@@ -278,7 +278,7 @@ pub mod grid {
                 }
             }
 
-            /// Creates a new BinaryGridState will all values initialized by calling f(x, y)
+            /// Creates a new AllocBinaryGrid will all values initialized by calling f(x, y)
             pub fn from_fn(
                 width: usize,
                 height: usize,
@@ -341,7 +341,7 @@ pub mod grid {
             /// Removes the row at position `y` within the grid,
             /// shifting all rows below it upwards.
             /// # Panics
-            /// Panics is `y >= height`
+            /// Panics if `y >= height`
             pub fn remove_row(&mut self, y: usize) {
                 let _ = self.grid.remove(y);
             }
@@ -349,7 +349,7 @@ pub mod grid {
             /// Removes the column at position `x` within the grid,
             /// shifting all columns after it to the left.
             /// # Panics
-            /// Panics is `x >= width`
+            /// Panics if `x >= width`
             pub fn remove_column(&mut self, x: usize) {
                 for row in &mut self.grid {
                     let _ = row.remove(x);
