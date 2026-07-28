@@ -11,7 +11,7 @@ fn main() {
     let (width, height) = crossterm::terminal::size().unwrap();
     // -1 is for the text being rendered at the top of the screen
     ratatui::run(|terminal| {
-        LangtonsAnt::new(width as usize, (height as usize) - 1).run(terminal)
+        LangtonsAnt::new(width as usize, height as usize * 2 - 1).run(terminal)
     })
     .unwrap();
 }
